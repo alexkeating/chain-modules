@@ -6,13 +6,13 @@ What if you want an eligibility criteria to be a combination of conditions imple
 
 [HatsEligibilitiesChain](https://github.com/Hats-Protocol/chain-modules/blob/main/src/HatsEligibilitiesChain.sol) is an eligibility module that composes any amount of eligibility modules with "and"/"or" logical operations. Similarly, [HatsTogglesChain](https://github.com/Hats-Protocol/chain-modules/blob/main/src/HatsTogglesChain.sol) is a toggle module that composes any amount of toggle modules.
 
-Both of these modules have a similar structure. Modules are chained in a format of a disjunction of conjunction clauses. For example, "(module1 && module2) || module3" has 2 conjunction clauses: 
+Both of these modules have a similar structure. Modules are chained in a format of a disjunction of conjunction clauses. For example, "(module1 && module2) || module3" has 2 conjunction clauses:
 
 "(module1 && module2)
 
-"module3" 
+"module3"
 
-These clauses are chained together with an "or" operation. 
+These clauses are chained together with an "or" operation.
 
 ## Deriving Wearer Eligibility
 
@@ -20,7 +20,7 @@ For the eligibilities chain module, a wearer's eligibility is derived by checkin
 
 ## Deriving Hat Status
 
-For the toggles chain module, a hat's status is derived by checking it's status in each module and combining the results according to the chosen logical operations. 
+For the toggles chain module, a hat's status is derived by checking it's status in each module and combining the results according to the chosen logical operations.
 
 ## Create New Eligibilities/Toggles Chain Instances
 
@@ -37,6 +37,7 @@ bytes memory otherImmutableArgs = abi.encodePacked(2, [2,1], module1Address, mod
 ```
 
 The module includes the following getters for these immutable variables:
+
 ```solidity
 function NUM_CONJUCTION_CLAUSES() public pure returns (uint256)
 
