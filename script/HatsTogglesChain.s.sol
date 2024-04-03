@@ -7,10 +7,10 @@ import { HatsModuleFactory, deployModuleFactory, deployModuleInstance } from "ha
 
 contract DeployImplementation is Script {
   HatsTogglesChain public implementation;
-  bytes32 public SALT = keccak256("lets add some salt to this meal");
+  bytes32 public SALT = bytes32(abi.encode(0x4a75));
 
   // default values
-  string public version = "0.2.0"; // increment with each deploy
+  string public version = "0.1.0"; // increment with each deploy
   bool private verbose = true;
 
   /// @notice Override default values, if desired
