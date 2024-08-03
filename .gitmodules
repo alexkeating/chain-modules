@@ -4,3 +4,4 @@
 [submodule "lib/hats-module"]
 	path = lib/hats-module
 	url = https://github.com/alexkeating/hats-module
+
