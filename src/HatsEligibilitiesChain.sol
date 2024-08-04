@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-//import { console2 } from "forge-std/Test.sol"; // remove before deploy
 import { HatsModule } from "hats-module/HatsModule.sol";
 import { HatsEligibilityModule } from "hats-module/HatsEligibilityModule.sol";
-import { Test, console2 } from "forge-std/Test.sol";
 
 /**
  * @notice Eligibility module that chains any amount of eligibility modules with "and" & "or" logical operations.
@@ -100,19 +98,13 @@ contract HatsEligibilitiesChain is HatsEligibilityModule {
 
     uint256 moduleIdx = 0;
     uint256 clauseIdx = 0;
-    console2.logString("Hi");
     standing = true;
     for (uint256 i = 0; i < numConjunctionClauses; i++) {
       eligibleInClause = true;
-      console2.logString("Hi 1");
       for (uint256 lenIdx = 0; lenIdx < conjunctionClauseLengths[i]; lenIdx++) {
         address module = modules[moduleIdx];
         moduleIdx++;
-        console2.logString("Hi 2");
         (eligibleInModule, standingInModule) = HatsEligibilityModule(module).getWearerStatus(_wearer, _hatId);
-        console2.logString("Hi 3");
-        console2.logBool(eligibleInModule);
-        console2.logBool(standingInModule);
         // bad standing in module -> wearer is not eligible and is in bad standing
         if (!standingInModule) {
           return (false, false);
@@ -121,10 +113,8 @@ contract HatsEligibilitiesChain is HatsEligibilityModule {
         not eligible in module -> not eligible in clause. Continue checking the next modules in the 
                       clause in order to check the standing status.
                       */
-        console2.logString("Hi 4");
         if (eligibleInClause && !eligibleInModule) {
           eligibleInClause = false;
-          console2.logString("Hi 5");
         }
       }
       clauseIdx++;
@@ -140,29 +130,12 @@ contract HatsEligibilitiesChain is HatsEligibilityModule {
         address module = modules[moduleIdx];
         moduleIdx++;
         (, standingInModule) = HatsEligibilityModule(module).getWearerStatus(_wearer, _hatId);
-        console2.logString("Hi 3");
-        console2.logBool(eligibleInModule);
-        console2.logBool(standingInModule);
         // bad standing in module -> wearer is not eligible and is in bad standing
         if (!standingInModule) {
           return (false, false);
         }
       }
     }
-
-    // for (uint256 i = clauseIdx; i < numConjunctionClauses; i++) {
-    //   for (uint256 lenIdx = moduleIdx; lenIdx < modules.length; lenIdx++) {
-    //     address module = modules[moduleIdx];
-    //     (eligibleInModule, standingInModule) = HatsEligibilityModule(module).getWearerStatus(_wearer, _hatId);
-    // console2.logString("Hi 6");
-    // console2.logBool(standingInModule);
-    //     // bad standing in module -> wearer is not eligible and is in bad standing
-    //     if (!standingInModule) {
-    //       return (false, false);
-    //     }
-    //   }
-    //   standing = true;
-    // }
   }
 
   function _setUp(bytes calldata _initData) internal override {
@@ -179,7 +152,6 @@ contract HatsEligibilitiesChain is HatsEligibilityModule {
 
     uint256 startIdx = _initData.length - _modules.length;
     for (uint256 i = 0; i < numModules; i++) {
-      //console2.logBytes20(bytes20(_initData[(startIdx + (i * 32) +12):(startIdx +(i + 1)*32)]));
       modules.push(address(bytes20(_initData[(startIdx + (i * 32) + 12):(startIdx + (i + 1) * 32)])));
     }
   }
