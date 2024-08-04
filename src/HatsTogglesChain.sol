@@ -7,8 +7,10 @@
 //
 ///**
 // * @notice Toggle module that chains any amount of toggle modules with "and" & "or" logical operations.
-// * Modules are chained in a format of a disjunction of conjunction clauses. For example, (module1 && module2) || module3
-// * has 2 conjunction clauses: (module1 && module2), module3. These clauses are chained together with an "or" operation.
+// * Modules are chained in a format of a disjunction of conjunction clauses. For example, (module1 && module2) ||
+// module3
+// * has 2 conjunction clauses: (module1 && module2), module3. These clauses are chained together with an "or"
+// operation.
 // */
 //contract HatsTogglesChain is HatsToggleModule {
 //  /*//////////////////////////////////////////////////////////////
@@ -25,18 +27,25 @@
 //   *
 //   * For more, see here: https://github.com/Saw-mon-and-Natalie/clones-with-immutable-args
 //   *
-//   * ------------------------------------------------------------------------------------------------------------------+
+//   *
+// ------------------------------------------------------------------------------------------------------------------+
 //   * CLONE IMMUTABLE "STORAGE"                                                                                         |
-//   * ------------------------------------------------------------------------------------------------------------------|
+//   *
+// ------------------------------------------------------------------------------------------------------------------|
 //   * Offset                          | Constant                  | Type      | Length                     | Source     |
-//   * -----------------------------------------------------------------------------------------------------|------------|
-//   * 0                               | IMPLEMENTATION            | address   | 20                         | HatsModule |
-//   * 20                              | HATS                      | address   | 20                         | HatsModule |
-//   * 40                              | hatId                     | uint256   | 32                         | HatsModule |
+//   *
+// -----------------------------------------------------------------------------------------------------|------------|
+//   * 0                               | IMPLEMENTATION            | address   | 20                         | HatsModule
+// |
+//   * 20                              | HATS                      | address   | 20                         | HatsModule
+// |
+//   * 40                              | hatId                     | uint256   | 32                         | HatsModule
+// |
 //   * 72                              | NUM_CONJUNCTION_CLAUSES    | uint256   | 32                         | this       |
 //   * 104                             | CONJUNCTION_CLAUSE_LENGTHS | uint256[] | NUM_CONJUNCTION_CLAUSES* 32 | this       |
 //   * 104+(NUM_CONJUNCTION_CLAUSES*32) | MODULES                   | address[] | NUM_MODULES * 20           | this       |
-//   * ------------------------------------------------------------------------------------------------------------------+
+//   *
+// ------------------------------------------------------------------------------------------------------------------+
 //   */
 //
 //  /**

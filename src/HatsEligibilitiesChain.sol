@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 //import { console2 } from "forge-std/Test.sol"; // remove before deploy
 import { HatsModule } from "hats-module/HatsModule.sol";
 import { HatsEligibilityModule } from "hats-module/HatsEligibilityModule.sol";
+import { Test, console2 } from "forge-std/Test.sol";
 
 /**
  * @notice Eligibility module that chains any amount of eligibility modules with "and" & "or" logical operations.
@@ -13,6 +14,10 @@ import { HatsEligibilityModule } from "hats-module/HatsEligibilityModule.sol";
  * any one of the modules, then the module will return a result of not eligble and is in bad standing.
  */
 contract HatsEligibilitiesChain is HatsEligibilityModule {
+  uint256 internal numConjunctionClauses;
+  uint256[] internal conjunctionClauseLengths;
+  address[] internal modules;
+  error Hi();
   /*//////////////////////////////////////////////////////////////
                           PUBLIC  CONSTANTS
   //////////////////////////////////////////////////////////////*/
@@ -44,41 +49,22 @@ contract HatsEligibilitiesChain is HatsEligibilityModule {
   /**
    * @notice Get the number of conjunction clauses
    */
-  function NUM_CONJUNCTION_CLAUSES() public pure returns (uint256) {
-    return _getArgUint256(72);
+  function NUM_CONJUNCTION_CLAUSES() public view returns (uint256) {
+    return numConjunctionClauses;
   }
+  // Add setup that sets these as globale variable s in the contract
 
   /**
    * @notice Get the a list of the lengths of every conjusction clause.
    */
-  function CONJUNCTION_CLAUSE_LENGTHS() public pure returns (uint256[] memory) {
-    return _getArgUint256Array(104, NUM_CONJUNCTION_CLAUSES());
+  function CONJUNCTION_CLAUSE_LENGTHS() public view returns (uint256[] memory) {
+    return conjunctionClauseLengths;
   }
 
   /**
    * @notice Get all module addresses.
    */
-  function MODULES() public pure returns (address[] memory) {
-    uint256[] memory lengths = CONJUNCTION_CLAUSE_LENGTHS();
-    uint256 numClauses = lengths.length;
-    uint256 numModules;
-    for (uint256 i = 0; i < numClauses;) {
-      numModules += lengths[i];
-
-      unchecked {
-        ++i;
-      }
-    }
-
-    address[] memory modules = new address[](numModules);
-    uint256 modulesStart = 104 + numClauses * 32;
-    for (uint256 i = 0; i < numModules;) {
-      modules[i] = _getArgAddress(modulesStart + 20 * i);
-
-      unchecked {
-        ++i;
-      }
-    }
+  function MODULES() public view returns (address[] memory) {
     return modules;
   }
 
@@ -90,7 +76,7 @@ contract HatsEligibilitiesChain is HatsEligibilityModule {
    * @notice Deploy the HatsEligibilitiesChain implementation contract and set its version
    * @dev This is only used to deploy the implementation contract, and should not be used to deploy clones
    */
-  constructor(string memory _version) HatsModule(_version) { }
+  constructor(string memory _version, address _hat, uint256 _hatId) HatsModule(_version, _hat, _hatId) { }
 
   /*//////////////////////////////////////////////////////////////
                       HATS ELIGIBILITY FUNCTION
@@ -107,46 +93,36 @@ contract HatsEligibilitiesChain is HatsEligibilityModule {
     returns (bool eligible, bool standing)
   {
     uint256 numClauses = NUM_CONJUNCTION_CLAUSES();
-    uint256 moduleOffset = 104 + 32 * numClauses; // offset to current clause
-    uint256 nextClauseOffset = moduleOffset; // offset to current clause
-
     bool eligibleInClause;
     bool eligibleInModule;
     bool standingInModule;
-    uint256 clauseIndex;
-    uint256 length;
-    address module;
 
-    while (clauseIndex < numClauses) {
-      length = _getArgUint256(104 + clauseIndex * 32); // current clause length
-
-      eligibleInClause = true;
-      nextClauseOffset += length * 20;
-      // check eligibility and standing according to current clause
-      while (moduleOffset < nextClauseOffset) {
-        module = _getArgAddress(moduleOffset);
+    eligibleInClause = true;
+    uint256 moduleIdx = 0;
+    uint256 clauseIdx = 0;
+	console2.logString("Hi");
+    for (uint256 i = 0; i < numConjunctionClauses; i++) {
+	console2.logString("Hi 1");
+      for (uint256 lenIdx = 0; lenIdx < conjunctionClauseLengths[i]; lenIdx++) {
+        address module = modules[moduleIdx];
+	console2.logString("Hi 2");
         (eligibleInModule, standingInModule) = HatsEligibilityModule(module).getWearerStatus(_wearer, _hatId);
-
+	console2.logString("Hi 3");
         // bad standing in module -> wearer is not eligible and is in bad standing
         if (!standingInModule) {
           return (false, false);
         }
-
         /* 
         not eligible in module -> not eligible in clause. Continue checking the next modules in the 
-        clause in order to check the standing status.
-        */
+                      clause in order to check the standing status.
+                      */
+	console2.logString("Hi 4");
         if (eligibleInClause && !eligibleInModule) {
           eligibleInClause = false;
+	console2.logString("Hi 5");
         }
-
-        moduleOffset += 20; // increment to the next clause
       }
-
-      unchecked {
-        ++clauseIndex;
-      }
-
+	  clauseIdx++;
       // if eligible, continue to check only standing
       if (eligibleInClause) {
         eligible = true;
@@ -154,27 +130,36 @@ contract HatsEligibilitiesChain is HatsEligibilityModule {
       }
     }
 
-    // check only standing for remaining modules, in case the wearer is eligible in a previous clause
-    while (clauseIndex < numClauses) {
-      length = _getArgUint256(104 + clauseIndex * 32);
-      nextClauseOffset += length * 20;
-
-      while (moduleOffset < nextClauseOffset) {
-        module = _getArgAddress(moduleOffset);
-        (, standingInModule) = HatsEligibilityModule(module).getWearerStatus(_wearer, _hatId);
-
+    for (uint256 i = clauseIdx; i < numConjunctionClauses; i++) {
+      for (uint256 lenIdx = moduleIdx; lenIdx < conjunctionClauseLengths[i]; lenIdx++) {
+        address module = modules[moduleIdx];
+        (eligibleInModule, standingInModule) = HatsEligibilityModule(module).getWearerStatus(_wearer, _hatId);
+        // bad standing in module -> wearer is not eligible and is in bad standing
         if (!standingInModule) {
           return (false, false);
         }
-
-        moduleOffset += 20;
       }
-
-      unchecked {
-        ++clauseIndex;
-      }
+      standing = true;
     }
+  }
 
-    standing = true;
+  function _setUp(bytes calldata _initData) internal override {
+    (uint256 _numConjunctionClauses,  uint256[] memory _conjunctionClauseLengths, bytes memory _modules) = abi.decode(_initData, (uint256, uint256[], bytes));
+     numConjunctionClauses = _numConjunctionClauses;
+     conjunctionClauseLengths = _conjunctionClauseLengths;
+
+	uint256 correctLength = _modules.length % 32;
+	uint256 numModules = _modules.length / 32;
+	if (correctLength != 0) {
+			revert Hi();
+	}
+
+	uint256 startIdx = _initData.length - _modules.length;
+    for (uint256 i = 0; i < numModules; i++) {
+			//console2.logBytes20(bytes20(_initData[(startIdx + (i * 32) +12):(startIdx +(i + 1)*32)]));
+			modules.push(address(bytes20(_initData[(startIdx + (i * 32) +12):(startIdx +(i + 1)*32)])));
+
+	}
+
   }
 }

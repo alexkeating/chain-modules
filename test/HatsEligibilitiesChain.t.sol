@@ -2,11 +2,9 @@
 pragma solidity ^0.8.19;
 
 import { Test, console2 } from "forge-std/Test.sol";
-import { HatsEligibilitiesChain } from "hats-module/HatsEligibilitiesChain.sol";
-import {
-  IHats, HatsModuleFactory, deployModuleFactory, deployModuleInstance
-} from "hats-module/utils/DeployFunctions.sol";
-import { DeployImplementation } from "../script/HatsEligibilitiesChain.s.sol";
+import { HatsEligibilitiesChain } from "src/HatsEligibilitiesChain.sol";
+import {IHats} from "hats-protocol/Interfaces/IHats.sol";
+import {Hats} from "hats-protocol//Hats.sol";
 import {
   TestEligibilityAlwaysEligible,
   TestEligibilityAlwaysNotEligible,
@@ -14,12 +12,20 @@ import {
   TestEligibilityOnlyBadStanding
 } from "./utils/TestModules.sol";
 import { HatsEligibilityModule } from "hats-module/HatsEligibilityModule.sol";
+import { IHatsModuleFactory } from "hats-module/interfaces/IHatsModuleFactory.sol";
+import { HatsEligibilitiesChain } from "src/HatsEligibilitiesChain.sol";
+import { HatsEligibilitiesChainFactory } from "src/HatsEligibilitiesChainFactory.sol";
 
-contract DeployImplementationTest is DeployImplementation, Test {
+contract DeployImplementationTest is Test {
   uint256 public fork;
   uint256 public BLOCK_NUMBER = 9_395_052; // the block number where hats module factory was deployed on Goerli;
-  IHats public constant HATS = IHats(0x3bc1A0Ad72417f2d411118085256fC53CBdDd137); // v1.hatsprotocol.eth
-  HatsModuleFactory public FACTORY;
+
+  string public constant version = "0.6.0-zksync";
+  // IHats public constant HATS = IHats(0x3bc1A0Ad72417f2d411118085256fC53CBdDd137); // v1.hatsprotocol.eth
+  string internal constant x = "Hats Protocol v1";
+  string internal constant y = "";
+  IHats public HATS = new Hats{ salt: bytes32(abi.encode(0x4a75)) }(x, y);
+  IHatsModuleFactory public FACTORY;
 
   HatsEligibilitiesChain public instance;
   uint256 public tophat;
@@ -45,11 +51,15 @@ contract DeployImplementationTest is DeployImplementation, Test {
     address _module1,
     address _module2
   ) public returns (HatsEligibilitiesChain) {
-    bytes memory otherImmutableArgs = abi.encodePacked(numClauses, lengths, _module1, _module2);
+
+    address[2] memory modules = [_module1, _module2];
+    bytes memory otherImmutableArgs = abi.encode(numClauses, lengths, abi.encode(modules));
     // deploy the instance
-    return HatsEligibilitiesChain(
-      deployModuleInstance(FACTORY, address(implementation), targetHat, otherImmutableArgs, "", saltNonce)
-    );
+    // return HatsEligibilitiesChain(
+    //   deployModuleInstance(FACTORY, address(instance), targetHat, otherImmutableArgs, "", saltNonce)
+    // );
+	console2.logAddress(_module1);
+    return HatsEligibilitiesChain(FACTORY.deployModule(targetHat, address(HATS), otherImmutableArgs, saltNonce));
   }
 
   function deployInstanceThreeModules(
@@ -60,23 +70,22 @@ contract DeployImplementationTest is DeployImplementation, Test {
     address _module2,
     address _module3
   ) public returns (HatsEligibilitiesChain) {
-    bytes memory otherImmutableArgs = abi.encodePacked(numClauses, lengths, _module1, _module2, _module3);
-    // deploy the instance
-    return HatsEligibilitiesChain(
-      deployModuleInstance(FACTORY, address(implementation), targetHat, otherImmutableArgs, "", saltNonce)
-    );
+    address[3] memory modules = [module1, _module2, _module3];
+    bytes memory otherImmutableArgs = abi.encode(numClauses, lengths, abi.encode(modules));
+    return HatsEligibilitiesChain(FACTORY.deployModule(targetHat, address(HATS), otherImmutableArgs, saltNonce));
   }
 
   function setUp() public virtual {
     // create and activate a fork, at BLOCK_NUMBER
-    fork = vm.createSelectFork(vm.rpcUrl("goerli"), BLOCK_NUMBER);
+    // fork = vm.createSelectFork(vm.rpcUrl("goerli"), BLOCK_NUMBER);
 
     // deploy the factory
-    FACTORY = deployModuleFactory(HATS, SALT, version);
+    // HATS, SALT, instanceversion
+    FACTORY = new HatsEligibilitiesChainFactory();
 
     // deploy via the script
-    DeployImplementation.prepare(version, false); // set last arg to true to log deployment
-    DeployImplementation.run();
+    // DeployImplementation.prepare(version, false); // set last arg to true to log deployment
+    // DeployImplementation.run();
 
     // set up hats
     tophat = HATS.mintTopHat(dao, "tophat", "dao.eth/tophat");
@@ -98,8 +107,8 @@ contract Setup1 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityAlwaysEligible("test"));
-    module2 = address(new TestEligibilityAlwaysEligible("test"));
+    module1 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(1);
     clauseLengths.push(1);
@@ -120,7 +129,7 @@ contract TestSetup1 is Setup1 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), version);
   }
 
   function test_instanceNumClauses() public {
@@ -165,8 +174,8 @@ contract Setup2 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityAlwaysNotEligible("test"));
-    module2 = address(new TestEligibilityAlwaysEligible("test"));
+    module1 = address(new TestEligibilityAlwaysNotEligible("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(1);
     clauseLengths.push(1);
@@ -187,7 +196,7 @@ contract TestSetup2 is Setup2 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), version);
   }
 
   function test_instanceNumClauses() public {
@@ -227,8 +236,8 @@ contract Setup3 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityAlwaysEligible("test"));
-    module2 = address(new TestEligibilityAlwaysNotEligible("test"));
+    module1 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityAlwaysNotEligible("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(1);
     clauseLengths.push(1);
@@ -249,7 +258,7 @@ contract TestSetup3 is Setup3 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), version);
   }
 
   function test_instanceNumClauses() public {
@@ -289,8 +298,8 @@ contract Setup4 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityAlwaysNotEligible("test"));
-    module2 = address(new TestEligibilityAlwaysNotEligible("test"));
+    module1 = address(new TestEligibilityAlwaysNotEligible("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityAlwaysNotEligible("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(1);
     clauseLengths.push(1);
@@ -311,7 +320,7 @@ contract TestSetup4 is Setup4 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), version);
   }
 
   function test_instanceNumClauses() public {
@@ -351,8 +360,8 @@ contract Setup5 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityAlwaysEligible("test"));
-    module2 = address(new TestEligibilityAlwaysEligible("test"));
+    module1 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(2);
 
@@ -372,7 +381,7 @@ contract TestSetup5 is Setup5 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), version);
   }
 
   function test_instanceNumClauses() public {
@@ -412,8 +421,8 @@ contract Setup6 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityAlwaysNotEligible("test"));
-    module2 = address(new TestEligibilityAlwaysEligible("test"));
+    module1 = address(new TestEligibilityAlwaysNotEligible("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(2);
 
@@ -433,7 +442,7 @@ contract TestSetup6 is Setup6 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), version);
   }
 
   function test_instanceNumClauses() public {
@@ -473,8 +482,8 @@ contract Setup7 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityAlwaysEligible("test"));
-    module2 = address(new TestEligibilityAlwaysNotEligible("test"));
+    module1 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityAlwaysNotEligible("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(2);
 
@@ -494,7 +503,7 @@ contract TestSetup7 is Setup7 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), version);
   }
 
   function test_instanceNumClauses() public {
@@ -534,8 +543,8 @@ contract Setup8 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityAlwaysNotEligible("test"));
-    module2 = address(new TestEligibilityAlwaysNotEligible("test"));
+    module1 = address(new TestEligibilityAlwaysNotEligible("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityAlwaysNotEligible("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(2);
 
@@ -555,7 +564,7 @@ contract TestSetup8 is Setup8 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), version);
   }
 
   function test_instanceNumClauses() public {
@@ -596,9 +605,9 @@ contract Setup9 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityAlwaysEligible("test"));
-    module2 = address(new TestEligibilityAlwaysEligible("test"));
-    module3 = address(new TestEligibilityAlwaysEligible("test"));
+    module1 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
+    module3 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(2);
     clauseLengths.push(1);
@@ -620,7 +629,7 @@ contract TestSetup9 is Setup9 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), version);
   }
 
   function test_instanceNumClauses() public {
@@ -661,9 +670,9 @@ contract Setup10 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityAlwaysNotEligible("test"));
-    module2 = address(new TestEligibilityAlwaysEligible("test"));
-    module3 = address(new TestEligibilityAlwaysEligible("test"));
+    module1 = address(new TestEligibilityAlwaysNotEligible("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
+    module3 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(2);
     clauseLengths.push(1);
@@ -685,7 +694,7 @@ contract TestSetup10 is Setup10 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), version);
   }
 
   function test_instanceNumClauses() public {
@@ -726,9 +735,9 @@ contract Setup11 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityAlwaysEligible("test"));
-    module2 = address(new TestEligibilityAlwaysEligible("test"));
-    module3 = address(new TestEligibilityAlwaysNotEligible("test"));
+    module1 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
+    module3 = address(new TestEligibilityAlwaysNotEligible("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(2);
     clauseLengths.push(1);
@@ -750,7 +759,7 @@ contract TestSetup11 is Setup11 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), version);
   }
 
   function test_instanceNumClauses() public {
@@ -791,9 +800,9 @@ contract Setup12 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityAlwaysNotEligible("test"));
-    module2 = address(new TestEligibilityAlwaysNotEligible("test"));
-    module3 = address(new TestEligibilityAlwaysNotEligible("test"));
+    module1 = address(new TestEligibilityAlwaysNotEligible("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityAlwaysNotEligible("test", address(HATS), chainedEligibilityHat));
+    module3 = address(new TestEligibilityAlwaysNotEligible("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(2);
     clauseLengths.push(1);
@@ -815,7 +824,7 @@ contract TestSetup12 is Setup12 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), instance.version());
   }
 
   function test_instanceNumClauses() public {
@@ -856,9 +865,9 @@ contract Setup13 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityAlwaysEligible("test"));
-    module2 = address(new TestEligibilityAlwaysEligible("test"));
-    module3 = address(new TestEligibilityAlwaysBadStanding("test"));
+    module1 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityAlwaysEligible("test", address(HATS), chainedEligibilityHat));
+    module3 = address(new TestEligibilityAlwaysBadStanding("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(2);
     clauseLengths.push(1);
@@ -880,7 +889,7 @@ contract TestSetup13 is Setup13 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), instance.version());
   }
 
   function test_instanceNumClauses() public {
@@ -921,9 +930,9 @@ contract Setup14 is DeployImplementationTest {
   function setUp() public virtual override {
     super.setUp();
 
-    module1 = address(new TestEligibilityOnlyBadStanding("test"));
-    module2 = address(new TestEligibilityOnlyBadStanding("test"));
-    module3 = address(new TestEligibilityOnlyBadStanding("test"));
+    module1 = address(new TestEligibilityOnlyBadStanding("test", address(HATS), chainedEligibilityHat));
+    module2 = address(new TestEligibilityOnlyBadStanding("test", address(HATS), chainedEligibilityHat));
+    module3 = address(new TestEligibilityOnlyBadStanding("test", address(HATS), chainedEligibilityHat));
 
     clauseLengths.push(1);
     clauseLengths.push(1);
@@ -946,7 +955,7 @@ contract TestSetup14 is Setup14 {
   }
 
   function test_deployImplementation() public {
-    assertEq(implementation.version_(), version);
+    assertEq(instance.version_(), instance.version());
   }
 
   function test_instanceNumClauses() public {
