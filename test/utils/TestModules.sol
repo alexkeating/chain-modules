@@ -33,7 +33,7 @@ contract TestEligibilityAlwaysNotEligible is HatsEligibilityModule {
 }
 
 contract TestEligibilityAlwaysBadStanding is HatsEligibilityModule {
-  constructor(string memory _version, address _hat, uint256 _hatId ) HatsModule(_version, _hat, _hatId) { }
+  constructor(string memory _version, address _hat, uint256 _hatId) HatsModule(_version, _hat, _hatId) { }
 
   function getWearerStatus(address, /* _wearer */ uint256 /* _hatId */ )
     public
@@ -46,7 +46,7 @@ contract TestEligibilityAlwaysBadStanding is HatsEligibilityModule {
 }
 
 contract TestEligibilityOnlyBadStanding is HatsEligibilityModule {
-  constructor(string memory _version, address _hat, uint256 _hatId) HatsModule(_version, _hat, _hatId ) { }
+  constructor(string memory _version, address _hat, uint256 _hatId) HatsModule(_version, _hat, _hatId) { }
 
   function getWearerStatus(address, /* _wearer */ uint256 /* _hatId */ )
     public

@@ -17,6 +17,7 @@ contract HatsEligibilitiesChain is HatsEligibilityModule {
   uint256 internal numConjunctionClauses;
   uint256[] internal conjunctionClauseLengths;
   address[] internal modules;
+
   error Hi();
   /*//////////////////////////////////////////////////////////////
                           PUBLIC  CONSTANTS
@@ -97,17 +98,21 @@ contract HatsEligibilitiesChain is HatsEligibilityModule {
     bool eligibleInModule;
     bool standingInModule;
 
-    eligibleInClause = true;
     uint256 moduleIdx = 0;
     uint256 clauseIdx = 0;
-	console2.logString("Hi");
+    console2.logString("Hi");
+    standing = true;
     for (uint256 i = 0; i < numConjunctionClauses; i++) {
-	console2.logString("Hi 1");
+      eligibleInClause = true;
+      console2.logString("Hi 1");
       for (uint256 lenIdx = 0; lenIdx < conjunctionClauseLengths[i]; lenIdx++) {
         address module = modules[moduleIdx];
-	console2.logString("Hi 2");
+        moduleIdx++;
+        console2.logString("Hi 2");
         (eligibleInModule, standingInModule) = HatsEligibilityModule(module).getWearerStatus(_wearer, _hatId);
-	console2.logString("Hi 3");
+        console2.logString("Hi 3");
+        console2.logBool(eligibleInModule);
+        console2.logBool(standingInModule);
         // bad standing in module -> wearer is not eligible and is in bad standing
         if (!standingInModule) {
           return (false, false);
@@ -116,13 +121,13 @@ contract HatsEligibilitiesChain is HatsEligibilityModule {
         not eligible in module -> not eligible in clause. Continue checking the next modules in the 
                       clause in order to check the standing status.
                       */
-	console2.logString("Hi 4");
+        console2.logString("Hi 4");
         if (eligibleInClause && !eligibleInModule) {
           eligibleInClause = false;
-	console2.logString("Hi 5");
+          console2.logString("Hi 5");
         }
       }
-	  clauseIdx++;
+      clauseIdx++;
       // if eligible, continue to check only standing
       if (eligibleInClause) {
         eligible = true;
@@ -131,35 +136,51 @@ contract HatsEligibilitiesChain is HatsEligibilityModule {
     }
 
     for (uint256 i = clauseIdx; i < numConjunctionClauses; i++) {
-      for (uint256 lenIdx = moduleIdx; lenIdx < conjunctionClauseLengths[i]; lenIdx++) {
+      for (uint256 lenIdx = 0; lenIdx < conjunctionClauseLengths[i]; lenIdx++) {
         address module = modules[moduleIdx];
-        (eligibleInModule, standingInModule) = HatsEligibilityModule(module).getWearerStatus(_wearer, _hatId);
+        moduleIdx++;
+        (, standingInModule) = HatsEligibilityModule(module).getWearerStatus(_wearer, _hatId);
+        console2.logString("Hi 3");
+        console2.logBool(eligibleInModule);
+        console2.logBool(standingInModule);
         // bad standing in module -> wearer is not eligible and is in bad standing
         if (!standingInModule) {
           return (false, false);
         }
       }
-      standing = true;
     }
+
+    // for (uint256 i = clauseIdx; i < numConjunctionClauses; i++) {
+    //   for (uint256 lenIdx = moduleIdx; lenIdx < modules.length; lenIdx++) {
+    //     address module = modules[moduleIdx];
+    //     (eligibleInModule, standingInModule) = HatsEligibilityModule(module).getWearerStatus(_wearer, _hatId);
+    // console2.logString("Hi 6");
+    // console2.logBool(standingInModule);
+    //     // bad standing in module -> wearer is not eligible and is in bad standing
+    //     if (!standingInModule) {
+    //       return (false, false);
+    //     }
+    //   }
+    //   standing = true;
+    // }
   }
 
   function _setUp(bytes calldata _initData) internal override {
-    (uint256 _numConjunctionClauses,  uint256[] memory _conjunctionClauseLengths, bytes memory _modules) = abi.decode(_initData, (uint256, uint256[], bytes));
-     numConjunctionClauses = _numConjunctionClauses;
-     conjunctionClauseLengths = _conjunctionClauseLengths;
+    (uint256 _numConjunctionClauses, uint256[] memory _conjunctionClauseLengths, bytes memory _modules) =
+      abi.decode(_initData, (uint256, uint256[], bytes));
+    numConjunctionClauses = _numConjunctionClauses;
+    conjunctionClauseLengths = _conjunctionClauseLengths;
 
-	uint256 correctLength = _modules.length % 32;
-	uint256 numModules = _modules.length / 32;
-	if (correctLength != 0) {
-			revert Hi();
-	}
+    uint256 correctLength = _modules.length % 32;
+    uint256 numModules = _modules.length / 32;
+    if (correctLength != 0) {
+      revert Hi();
+    }
 
-	uint256 startIdx = _initData.length - _modules.length;
+    uint256 startIdx = _initData.length - _modules.length;
     for (uint256 i = 0; i < numModules; i++) {
-			//console2.logBytes20(bytes20(_initData[(startIdx + (i * 32) +12):(startIdx +(i + 1)*32)]));
-			modules.push(address(bytes20(_initData[(startIdx + (i * 32) +12):(startIdx +(i + 1)*32)])));
-
-	}
-
+      //console2.logBytes20(bytes20(_initData[(startIdx + (i * 32) +12):(startIdx +(i + 1)*32)]));
+      modules.push(address(bytes20(_initData[(startIdx + (i * 32) + 12):(startIdx + (i + 1) * 32)])));
+    }
   }
 }

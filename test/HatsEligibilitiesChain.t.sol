@@ -3,8 +3,8 @@ pragma solidity ^0.8.19;
 
 import { Test, console2 } from "forge-std/Test.sol";
 import { HatsEligibilitiesChain } from "src/HatsEligibilitiesChain.sol";
-import {IHats} from "hats-protocol/Interfaces/IHats.sol";
-import {Hats} from "hats-protocol//Hats.sol";
+import { IHats } from "hats-protocol/Interfaces/IHats.sol";
+import { Hats } from "hats-protocol/Hats.sol";
 import {
   TestEligibilityAlwaysEligible,
   TestEligibilityAlwaysNotEligible,
@@ -51,14 +51,13 @@ contract DeployImplementationTest is Test {
     address _module1,
     address _module2
   ) public returns (HatsEligibilitiesChain) {
-
     address[2] memory modules = [_module1, _module2];
     bytes memory otherImmutableArgs = abi.encode(numClauses, lengths, abi.encode(modules));
     // deploy the instance
     // return HatsEligibilitiesChain(
     //   deployModuleInstance(FACTORY, address(instance), targetHat, otherImmutableArgs, "", saltNonce)
     // );
-	console2.logAddress(_module1);
+    console2.logAddress(_module1);
     return HatsEligibilitiesChain(FACTORY.deployModule(targetHat, address(HATS), otherImmutableArgs, saltNonce));
   }
 
