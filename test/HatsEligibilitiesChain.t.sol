@@ -13,6 +13,7 @@ import {
 } from "./utils/TestModules.sol";
 import { HatsEligibilityModule } from "hats-module/HatsEligibilityModule.sol";
 import { IHatsModuleFactory } from "hats-module/interfaces/IHatsModuleFactory.sol";
+import { HatsModule } from "hats-module/HatsModule.sol";
 import { HatsEligibilitiesChain } from "src/HatsEligibilitiesChain.sol";
 import { HatsEligibilitiesChainFactory } from "src/HatsEligibilitiesChainFactory.sol";
 
@@ -57,7 +58,7 @@ contract DeployImplementationTest is Test {
     // return HatsEligibilitiesChain(
     //   deployModuleInstance(FACTORY, address(instance), targetHat, otherImmutableArgs, "", saltNonce)
     // );
-    console2.logAddress(_module1);
+    console2.logBytes(otherImmutableArgs);
     return HatsEligibilitiesChain(FACTORY.deployModule(targetHat, address(HATS), otherImmutableArgs, saltNonce));
   }
 
@@ -157,7 +158,7 @@ contract TestSetup1 is Setup1 {
   }
 
   function test_initialized() public {
-    vm.expectRevert("Initializable: contract is already initialized");
+    vm.expectRevert(HatsModule.AlreadyInitialized.selector);
     instance.setUp(abi.encode("setUp attempt"));
   }
 }
