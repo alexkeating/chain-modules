@@ -7,8 +7,8 @@ import { L2ContractHelper } from "./lib/L2ContractHelper.sol";
 
 contract HatsEligibilitiesChainFactory is IHatsModuleFactory {
   string public constant VERSION = "0.6.0-zksync";
-  /// @dev Bytecode hash can be found in zkout/HatsEligibilitiesChain.sol/HatsEligibilitiesChain.json under the hash key.
-  bytes32 constant BYTECODE_HASH = 0x01000217c215fc112f533fa53d3a758de8edeee3d9e6c8914514c21f8269578f;
+  /// @dev Bytecode hash can be found in artifacts-zk/src/HatsEligibilitiesChainFactory.sol/HatsEligibilitiesChainFactory.json under the facotryDeps key.
+  bytes32 constant BYTECODE_HASH = 0x0100017f864916aad943214f07be84ecbe29a1d8b69ae77ef4999a126491757f;
 
   function deployModule(uint256 _hatId, address _hat, bytes calldata _initData, uint256 _saltNonce)
     external
